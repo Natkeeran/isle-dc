@@ -355,3 +355,10 @@ up:
 .SILENT: down
 down:
 	-docker-compose down --remove-orphans
+
+.PHONY: set_admin_password
+.SILENT: set_admin_password
+set_admin_password:
+	@$(eval PASSWORD ?= $(shell bash -c 'read -s -p "Password: " pwd; echo $$pwd'))
+	@echo "\n\nSetting admin password now"
+	docker-compose exec -T drupal with-contenv bash -lc 'drush user:password admin "$(PASSWORD)"'
