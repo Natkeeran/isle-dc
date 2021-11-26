@@ -371,10 +371,12 @@ local-standard:
 	$(MAKE) set-files-owner SRC=$(CURDIR)/codebase
 	$(MAKE) -B docker-compose.yml ENVIRONMENT=local
 	docker-compose up -d
-	$(MAKE) remove_standard_profile_references_from_config
 	$(MAKE) install ENVIRONMENT=local
 	$(MAKE) hydrate ENVIRONMENT=local
 	$(MAKE) hydrate-local-standard ENVIRONMENT=local
+	docker-compose exec -T drupal with-contenv bash -lc "composer require mjordan/islandora_workbench_integration"
+	docker-compose exec -T drupal with-contenv bash -lc "drush en -y islandora_workbench_integration"
+
 
 .PHONY: clean
 .SILENT: clean
