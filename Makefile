@@ -141,6 +141,19 @@ update-config-from-environment:
 	-docker-compose exec -T drupal with-contenv bash -lc "for_all_sites configure_openseadragon"
 	-docker-compose exec -T drupal with-contenv bash -lc "for_all_sites configure_islandora_default_module"
 
+# Updates configuration from environment variables.
+# Allow all commands to fail as the user may not have all the modules like matomo, etc.
+.PHONY: hydrate-local-standard
+.SILENT: hydrate-local-standard
+ hydrate-local-standard:
+	-docker-compose exec -T drupal with-contenv bash -lc "for_all_sites configure_search_api_solr_module"
+	-docker-compose exec -T drupal drush -l $(SITE) -y pm:enable search_api_solr_defaults
+	-docker-compose exec -T drupal with-contenv bash -lc "for_all_sites create_solr_core_with_default_config"
+	-docker-compose exec -T drupal drush -l $(SITE) -y pm:enable responsive_image syslog devel content_browser admin_toolbar pdf matomo islandora_defaults controlled_access_terms_defaults islandora_fits islandora_breadcrumbs islandora_iiif islandora_oaipmh islandora_search
+	-docker-compose exec -T drupal with-contenv bash -lc "for_all_sites configure_islandora_default_module"
+	-docker-compose exec -T drupal with-contenv bash -lc "for_all_sites configure_matomo_module"
+	-docker-compose exec -T drupal with-contenv bash -lc "for_all_sites configure_openseadragon"
+
 # Runs migrations of islandora
 .PHONY: run-islandora-migrations
 .SILENT: run-islandora-migrations
@@ -337,6 +350,31 @@ local: generate-secrets
 	$(MAKE) install ENVIRONMENT=local
 	$(MAKE) hydrate ENVIRONMENT=local
 	$(MAKE) set-files-owner SRC=$(CURDIR)/codebase ENVIROMENT=local
+
+# git clone https://github.com/dannylamb/islandora-sandbox codebase
+.PHONY: local-standard
+.SILENT: local-standard
+local-standard:
+	$(MAKE) download-default-certs
+	php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+	if [ `wget -q -O - https://composer.github.io/installer.sig` != `php -r "echo hash_file('sha384', 'composer-setup.php');"` ]; then \
+		>&2 echo 'ERROR: Invalid installer checksum'; \
+		rm composer-setup.php; \
+		exit 1; \
+	fi
+	php composer-setup.php --quiet
+	rm composer-setup.php
+	if [ ! -d ./codebase ]; then \
+		git clone -b 2_x_update https://github.com/Natkeeran/islandora-sandbox.git codebase; \
+	fi
+	(cd codebase && php ../composer.phar update)
+	$(MAKE) set-files-owner SRC=$(CURDIR)/codebase
+	$(MAKE) -B docker-compose.yml ENVIRONMENT=local
+	docker-compose up -d
+	$(MAKE) remove_standard_profile_references_from_config
+	$(MAKE) install ENVIRONMENT=local
+	$(MAKE) hydrate ENVIRONMENT=local
+	$(MAKE) hydrate-local-standard ENVIRONMENT=local
 
 .PHONY: clean
 .SILENT: clean
