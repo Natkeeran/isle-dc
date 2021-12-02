@@ -149,10 +149,12 @@ update-config-from-environment:
 	-docker-compose exec -T drupal with-contenv bash -lc "for_all_sites configure_search_api_solr_module"
 	-docker-compose exec -T drupal drush -l $(SITE) -y pm:enable search_api_solr_defaults
 	-docker-compose exec -T drupal with-contenv bash -lc "for_all_sites create_solr_core_with_default_config"
-	-docker-compose exec -T drupal drush -l $(SITE) -y pm:enable responsive_image syslog devel content_browser admin_toolbar pdf matomo islandora_defaults controlled_access_terms_defaults islandora_fits islandora_breadcrumbs islandora_iiif islandora_oaipmh islandora_search
+	-docker-compose exec -T drupal drush -l $(SITE) -y pm:enable responsive_image syslog devel content_browser admin_toolbar pdf matomo restui islandora_defaults controlled_access_terms_defaults islandora_fits islandora_breadcrumbs islandora_iiif islandora_oaipmh islandora_search
 	-docker-compose exec -T drupal with-contenv bash -lc "for_all_sites configure_islandora_default_module"
 	-docker-compose exec -T drupal with-contenv bash -lc "for_all_sites configure_matomo_module"
 	-docker-compose exec -T drupal with-contenv bash -lc "for_all_sites configure_openseadragon"
+	-docker-compose exec -T drupal drush -l $(SITE) theme:enable olivero
+	-docker-compose exec -T drupal drush -l $(SITE) config:set system.theme default olivero -y
 
 # Runs migrations of islandora
 .PHONY: run-islandora-migrations
@@ -374,9 +376,9 @@ local-standard:
 	$(MAKE) install ENVIRONMENT=local
 	$(MAKE) hydrate ENVIRONMENT=local
 	$(MAKE) hydrate-local-standard ENVIRONMENT=local
+	$(MAKE) run-islandora-migrations ENVIRONMENT=local
 	docker-compose exec -T drupal with-contenv bash -lc "composer require mjordan/islandora_workbench_integration"
 	docker-compose exec -T drupal with-contenv bash -lc "drush en -y islandora_workbench_integration"
-
 
 .PHONY: clean
 .SILENT: clean
