@@ -177,7 +177,7 @@ namespaces:
 .PHONY: hydrate
 .SILENT: hydrate
 ## Reconstitute the site from environment variables.
-hydrate: update-settings-php update-config-from-environment solr-cores namespaces run-islandora-migrations
+hydrate: update-settings-php update-config-from-environment solr-cores namespaces
 	docker-compose exec -T drupal drush cr -y
 
 # Created by the standard profile, need to be deleted to import a site that was
@@ -356,7 +356,7 @@ local: generate-secrets
 # git clone https://github.com/dannylamb/islandora-sandbox codebase
 .PHONY: local-standard
 .SILENT: local-standard
-local-standard:
+local-standard: generate-secrets
 	$(MAKE) download-default-certs
 	php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
 	if [ `wget -q -O - https://composer.github.io/installer.sig` != `php -r "echo hash_file('sha384', 'composer-setup.php');"` ]; then \
